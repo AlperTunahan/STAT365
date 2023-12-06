@@ -1,0 +1,258 @@
+---
+title: "STAT365"
+author: "Alper Tunahan Öztürk"
+date: "2023-01-06"
+output: html_document
+---
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(ggplot2)
+library(dplyr)
+library(plotrix) #pie3D
+library(ggpubr)
+```
+
+
+```{r}
+dt <- read.csv("Factors influencing voting behaviour on 2023 Turkish presidential election (Yanıtlar) - Form Yanıtları 1.csv", )
+dt <- dt[,-1]
+# Column name fix
+dtex <- dt[,9:42]
+
+dt <- dt %>% select(1:8) %>% rename("Gender" = 1, "Age" = 2, "Education_Level" = 3, "Faculty" = 4,
+                              "Dep" = 5, "Living" = 6, "Eco_active" = 7, "Income" = 8)
+dt <- cbind(dt, dtex)
+
+dt <- dt[-135,]
+
+
+# Making factor
+dt <- dt %>% mutate_if(is.character, as.factor)
+dt <- dt %>% mutate_if(is.numeric, as.factor)
+```
+
+
+```{r}
+#glimpse(dt)
+# 1 3 4 15 16 18 19 20 21 22 23 26 29 32 33 34 38 39 41
+dt %>% group_by(Gender) %>% 
+  summarise(n = n())
+dt %>% group_by(Education_Level) %>% 
+  summarise(n = n())
+dt %>% group_by(dt$Faculty) %>% 
+  summarise(n = n())
+dt %>% group_by(X15..Who.are.you.planning.to.vote.for.in.the.coming.elections.) %>% 
+  summarise(n = n())
+dt %>% group_by(X16..Would.you.change.your.vote.according.to.the.developments.and.changes.in.the.country.) %>% 
+  summarise(n = n())
+dt %>% group_by(X18..In.your.opinion..what.is.the.most.important.problem.facing.the.Turkey.today.) %>% 
+  summarise(n = n())
+dt %>% group_by(X19..Which.factor.affects.your.vote.mostly.) %>% 
+  summarise(n = n())
+dt %>% group_by(X20..On.what.basis.do.you.assess.a.political.candidate.) %>% 
+  summarise(n = n())
+dt %>% group_by(X21..How.much.do.you.trust.the.current.government.to.work.for.you.) %>% 
+  summarise(n = n())
+dt %>% group_by(X22..What.do.you.think.is.the.biggest.problem.of.students.in.the.country.) %>% 
+  summarise(n = n())
+dt %>% group_by(X32..As.you.think.about.your.financial.situation..which.of.the.following.economic.issues.worries.you.the.most.right.now.) %>% 
+  summarise(n = n())
+
+
+```
+
+```{r}
+# 
+countfac <- dt %>% select(Faculty) %>% filter(Faculty == "Faculty of Art and Science") %>% nrow()
+countfac
+```
+
+```{r}
+dt %>% select(X18..In.your.opinion..what.is.the.most.important.problem.facing.the.Turkey.today.)
+
+plot(dt$X18..In.your.opinion..what.is.the.most.important.problem.facing.the.Turkey.today.)
+
+a <- dt %>% group_by(X18..In.your.opinion..what.is.the.most.important.problem.facing.the.Turkey.today.) %>% 
+  summarise(n = n())
+
+
+pie(a$n, labels = a$X18..In.your.opinion..what.is.the.most.important.problem.facing.the.Turkey.today.)
+
+pie3D(a$n, labels = a$X18..In.your.opinion..what.is.the.most.important.problem.facing.the.Turkey.today., )
+
+```
+
+## Is there any relationship between freedom of speech and Turkey citizens desire to apply EU ?
+```{r}
+dt %>% select(X11..How.do.you.identify.yourself.from.the.political.point.of.view., X41..Do.you.think.that.it.is.desirable.or.undesirable..that.Turkey.applies.for.partnership.in.the.European.Union.) %>% group_by(X41..Do.you.think.that.it.is.desirable.or.undesirable..that.Turkey.applies.for.partnership.in.the.European.Union.) %>% summarise(n = n())
+
+```
+
+```{r}
+library(bestNormalize)
+
+shapiro.test(as.numeric(dt$X29..Would.you.describe.the.state.of.the.nation.s.economy.these.days.)) #not normal
+
+a <- bestNormalize(as.numeric(dt$X29..Would.you.describe.the.state.of.the.nation.s.economy.these.days.))
+
+shapiro.test(a$x.t)
+
+hist(as.numeric(dt$X29..Would.you.describe.the.state.of.the.nation.s.economy.these.days.))
+
+
+
+dt %>% group_by(X29..Would.you.describe.the.state.of.the.nation.s.economy.these.days.) %>% summarise(n = n())
+
+chisq.test(x = dt$Income, y = dt$X29..Would.you.describe.the.state.of.the.nation.s.economy.these.days.)
+```
+
+```{r}
+# Since the data is not normal we used nonparametric test
+
+# Signifiance test
+kruskal.test(as.numeric(dt$Income) ~ dt$X29..Would.you.describe.the.state.of.the.nation.s.economy.these.days., data = dt)
+
+# From the output of the Kruskal-Wallis test, we know that there is a significant difference between groups, but we don’t know which pairs of groups are different.
+
+# It’s possible to use the function pairwise.wilcox.test() to calculate pairwise comparisons between group levels with corrections for multiple testing
+
+pairwise.wilcox.test(as.numeric(dt$Income), dt$X29..Would.you.describe.the.state.of.the.nation.s.economy.these.days.,
+                 p.adjust.method = "BH")
+
+# The pairwise comparison shows that, only trt1 and trt2 are significantly different (p < 0.05).
+
+
+
+ggline(dt, x = "Income", y = "X29..Would.you.describe.the.state.of.the.nation.s.economy.these.days.", add = c("mean_se", "jitter"), color = "steelblue", ylab = "State of the Nation`s Economy", xlab = "Monthly Income") 
+```
+
+```{r}
+cols <- c("BAR"="#62c76b")
+ggplot(dt, aes(X40..Do.you.agree.that.refugees.should.leave.the.country., fill = "BAR")) + 
+  geom_bar(fill = "#FFDB6D", color = "#C4961A") + 
+  theme_bw() + 
+  labs(title = "Do you agree that refugees should leave the country?", x = "", y = "Frequency")
+
+```
+```{r}
+ggplot(dt, aes(X41..Do.you.think.that.it.is.desirable.or.undesirable..that.Turkey.applies.for.partnership.in.the.European.Union.)) + 
+  geom_bar(fill = "#00AFBB", color = "#C4961A") + 
+  theme_bw() + 
+  labs(title = "Do you agree that refugees should leave the country?", x = "") +
+  scale_colour_manual(name="Error Bars") + scale_fill_manual(name="Bar") 
+
+```
+```{r}
+ggplot(dt, aes(X42..Do.you.think.Turkey.should.stay.in.NATO.or.leave.)) + 
+  geom_bar(fill = "#69b3a2", color = "purple") + 
+  theme_bw() + 
+  labs(title = "Do you think Turkey should stay in NATO or leave?", x = "") +
+  scale_colour_manual(name="Error Bars",values=cols) + scale_fill_manual(name="Bar",values=cols) 
+```
+
+
+```{r}
+shapiro.test(as.numeric(dt$X24..How.much.do.you.agree.with.that.I.can.freely.and.publicly.express.my.political.opinions.)) #not normal
+
+# Since the data is not normal we used nonparametric test
+
+# Signifiance test
+kruskal.test(as.numeric(dt$X41..Do.you.think.that.it.is.desirable.or.undesirable..that.Turkey.applies.for.partnership.in.the.European.Union.) ~ dt$X24..How.much.do.you.agree.with.that.I.can.freely.and.publicly.express.my.political.opinions., data = dt)
+
+# From the output of the Kruskal-Wallis test, we know that there is a significant difference between groups, but we don’t know which pairs of groups are different.
+
+# It’s possible to use the function pairwise.wilcox.test() to calculate pairwise comparisons between group levels with corrections for multiple testing
+
+pairwise.wilcox.test(as.numeric(dt$X41..Do.you.think.that.it.is.desirable.or.undesirable..that.Turkey.applies.for.partnership.in.the.European.Union.), dt$X24..How.much.do.you.agree.with.that.I.can.freely.and.publicly.express.my.political.opinions.,
+                 p.adjust.method = "BH")
+
+# The pairwise comparison shows that, only trt1 and trt2 are significantly different (p < 0.05).
+
+
+k <- as.numeric(dt$X41..Do.you.think.that.it.is.desirable.or.undesirable..that.Turkey.applies.for.partnership.in.the.European.Union.)
+
+dt <- cbind(dt, k)
+
+dt$k <- as.numeric(dt$k)
+class(dt$k)
+
+dt$X41..Do.you.think.that.it.is.desirable.or.undesirable..that.Turkey.applies.for.partnership.in.the.European.Union.
+
+
+
+ggline(dt, y = "k", x = "X24..How.much.do.you.agree.with.that.I.can.freely.and.publicly.express.my.political.opinions.", add = c("mean_se", "jitter"), color = "purple", ylab = "How much you can express your political opinions", xlab = "") 
+
+```
+
+
+```{r}
+shapiro.test(as.numeric(dt$X25..Do.you.agree.with.that.Civil.rights.are.an.increasingly.important.part.of.Turkey.values.)) #not normal
+
+shapiro.test(as.numeric(dt$X26..Do.you.agree.people.from.all.religions.and.believes.has.equal.rights.)) #not normal
+
+# Since the data is not normal we used nonparametric test
+
+# Signifiance test
+kruskal.test(as.numeric(dt$X41..Do.you.think.that.it.is.desirable.or.undesirable..that.Turkey.applies.for.partnership.in.the.European.Union.) ~ dt$X24..How.much.do.you.agree.with.that.I.can.freely.and.publicly.express.my.political.opinions., data = dt)
+
+# From the output of the Kruskal-Wallis test, we know that there is a significant difference between groups, but we don’t know which pairs of groups are different.
+
+# It’s possible to use the function pairwise.wilcox.test() to calculate pairwise comparisons between group levels with corrections for multiple testing
+
+pairwise.wilcox.test(as.numeric(dt$X41..Do.you.think.that.it.is.desirable.or.undesirable..that.Turkey.applies.for.partnership.in.the.European.Union.), dt$X24..How.much.do.you.agree.with.that.I.can.freely.and.publicly.express.my.political.opinions.,
+                 p.adjust.method = "BH")
+
+# The pairwise comparison shows that, only trt1 and trt2 are significantly different (p < 0.05).
+
+
+k <- as.numeric(dt$X41..Do.you.think.that.it.is.desirable.or.undesirable..that.Turkey.applies.for.partnership.in.the.European.Union.)
+
+dt <- cbind(dt, k)
+
+dt$k <- as.numeric(dt$k)
+class(dt$k)
+
+dt$X41..Do.you.think.that.it.is.desirable.or.undesirable..that.Turkey.applies.for.partnership.in.the.European.Union.
+
+
+
+ggline(dt, y = "k", x = "X24..How.much.do.you.agree.with.that.I.can.freely.and.publicly.express.my.political.opinions.", add = c("mean_se", "jitter"), color = "purple", ylab = "How much you can express your political opinions", xlab = "") 
+
+```
+
+## Is there any effect of religion to the people's perspective against their civil rights?
+
+```{r}
+shapiro.test(as.numeric(dt$X25..Do.you.agree.with.that.Civil.rights.are.an.increasingly.important.part.of.Turkey.values.)) #not normal
+
+shapiro.test(as.numeric(dt$X26..Do.you.agree.people.from.all.religions.and.believes.has.equal.rights.)) #not normal
+
+# Since the data is not normal we used nonparametric test
+
+# Signifiance test
+kruskal.test(as.numeric(dt$X25..Do.you.agree.with.that.Civil.rights.are.an.increasingly.important.part.of.Turkey.values.) ~ dt$X26..Do.you.agree.people.from.all.religions.and.believes.has.equal.rights., data = dt)
+
+# From the output of the Kruskal-Wallis test, we know that there is a significant difference between groups, but we don’t know which pairs of groups are different.
+
+# It’s possible to use the function pairwise.wilcox.test() to calculate pairwise comparisons between group levels with corrections for multiple testing
+
+pairwise.wilcox.test(as.numeric(dt$X25..Do.you.agree.with.that.Civil.rights.are.an.increasingly.important.part.of.Turkey.values.), dt$X26..Do.you.agree.people.from.all.religions.and.believes.has.equal.rights., p.adjust.method = "BH")
+
+# The pairwise comparison shows that, only trt1 and trt2 are significantly different (p < 0.05).
+
+
+k <- as.numeric(dt$X26..Do.you.agree.people.from.all.religions.and.believes.has.equal.rights.)
+
+dt <- cbind(dt, k)
+
+dt$k <- as.numeric(dt$k)
+class(dt$k)
+
+dt$k
+
+ggline(dt, y = "k", x = "X25..Do.you.agree.with.that.Civil.rights.are.an.increasingly.important.part.of.Turkey.values.", add = c("mean_se", "jitter"), color = "red", ylab = "Does civil rights are an important part of Turkey values", xlab = "") 
+
+```
+
+
+
