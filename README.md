@@ -1,1 +1,3 @@
 # STAT365
+
+The concept of democracy has been defined in a variety of ways, so there exist some differences on how it is perceived by societies. This study was conducted in the purpose of analyzing the factors that might be effective on the voting behavior of the METU students in the 2023 presidential election. A questionnaire which consists of 42 questions was used to gather data from 225 students, who were from different faculties, classes and age groups; and this survey was used as the source of this study. Non-parametric methods were applied such as Kruskal-Wallis test and Wilcoxon Rank Sum test due to survey data being non-normal and three research questions were answered. The gathered data was analyzed by using R Studio and Excel descriptive statistics.
